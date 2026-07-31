@@ -1,0 +1,4 @@
+# 唤醒词 Demo 运行依赖（Python 3.8+）
+numpy>=1.21
+onnxruntime>=1.16
+sounddevice>=0.4.6

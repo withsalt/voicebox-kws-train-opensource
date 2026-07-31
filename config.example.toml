@@ -1,0 +1,71 @@
+# ============================================================================
+# KWS 开源版配置示例（仅评估 + 训练 + 导出）
+# 用法：复制为 config.toml 后按需修改（config.toml 已 gitignore，不会泄露凭证）。
+#   cp config.example.toml config.toml
+# 三段：[score] 唤醒词评估 / [train] 训练 / [export] 导出。
+# ============================================================================
+
+# ===================== 唤醒词评分（评估唤醒词质量 · kws_score） =====================
+# 直接调用大模型服务（Anthropic Messages 兼容），强制工具调用输出结构化 JSON 评分。
+# 客观维度(音节/OOV/拼音)由本地脚本确定性计算，误唤醒等需世界知识的维度交给模型。
+# 用法：python -m kws_score.cli 小白小白 你好小白
+[score]
+base_url = "https://api.anthropic.com"   # 大模型服务地址（自动拼 /v1/messages；也可填兼容代理）
+api_key = "your-llm-api-key"             # 服务 key（也可用环境变量 KWS_SCORE_API_KEY）
+model = "claude-opus-4-8"                # 模型 ID（也可用环境变量 KWS_SCORE_MODEL）
+max_tokens = 8192                # 单次回复上限（含候选词推荐，建议 ≥8192）
+# temperature = 0.0              # 可选；留空=不下发。注意部分模型已弃用此参数，下发会 400
+timeout = 120                    # 单次请求超时（秒）
+max_retries = 3                  # 限流/网络错误的重试次数
+# wake_words = ["小白小白"]      # 可选：不带命令行参数时默认评估这些词
+# —— 近音正样本：从唤醒词拼音【确定性计算】（仅声调/模糊音差异、排除完全同音），不靠大模型提议；
+#    作为唤醒词的正样本变体推荐（合成/采集为正样本语料时统一标注为目标唤醒词）。——
+recommend_samples = true         # 是否确定性生成近音正样本词
+max_positive_samples = 5         # 声调近音上限（基础；模糊音近音不受此限）
+max_fuzzy_samples = 10           # 模糊音近音/近音正样本总数上限（模糊音可突破基础上限至此，超出先砍声调）
+
+# ===================== 训练（finetune + 评测 · kws_train） =====================
+# 在本地基线模型上 finetune + 评测，吃预先备好的 4 个数据文件，产 score.txt + DET。需 GPU。
+#   train_wav.scp / cv_wav.scp / test_wav.scp（utt_id <TAB> wav路径）+ merge_trans.txt（数据格式见 README）。
+# 缓解小数据过拟合：lr 下调 + cv_loss 早停。
+# 用法：python -m kws_train train 小木小木
+[train]
+enabled = true
+model_dir = "speech_charctc_kws_phone"  # 本地基线模型目录（从 ModelScope 下载，见 README）
+lr = 0.0001                # finetune 学习率（基线是 0.001，下调防过拟合）
+max_epochs = 100            # 轮数上限（早停可能提前停）
+batch_size = 128
+workers = 4
+num_avg = 10               # 评测前按 cv_loss 平均的最优 checkpoint 数
+early_stop_patience = 6    # cv_loss 连续多少 epoch 未改善即早停（<=0 关闭）
+early_stop_min_delta = 0.0
+eval_after_train = true
+work_subdir = "training"   # 落在 output/<词>/training
+# —— 优化①：在线 SpecAugment（训练器唯一的在线增强）。基线 2/2/50/30 对短叠词/声调近音过强
+# （频率最多遮 ~75%、时间最多遮 ~1s）。下调更稳；设回 2/2/50/30 恢复基线行为。
+spec_aug_num_t_mask = 2    # 时间掩码条数
+spec_aug_num_f_mask = 1    # 频率掩码条数（基线 2 → 1）
+spec_aug_max_t = 20        # 单条时间掩码最大帧数 ×10ms（基线 50 → 20）
+spec_aug_max_f = 10        # 单条频率掩码最大 mel 频带数（基线 30 → 10）
+# —— 优化②：cv 选择指标。cv 负:正 不均衡 → 总 cv_loss 被负样本主导，易欠训召回。
+# balanced=正/负各自平均再加权（推荐）；pos=只看正样本；total=基线行为。缺类自动回退 total。
+cv_select_metric = "balanced"  # balanced | pos | total
+cv_pos_weight = 0.5            # balanced 下正样本权重（调高更偏召回）
+# 评测后自动选阈值 + 回写部署 keywords.json：
+target_fa_per_hour = 0.5   # 误唤醒/小时预算：取满足预算的最高召回阈值；达不到则回退误唤醒最低点
+target_min_recall = 0.0    # 召回下限（仅告警，0=不提示）
+
+# ===================== 导出流式 ONNX（kws_export） =====================
+# 训练后把「最优解」checkpoint（默认 avg_<num_avg>.pt，否则回退 cv_loss 最小单 epoch）导出为
+# 带显式 cache 的流式 ONNX + 部署资源（tokens/lexicon/am.mvn/kws_meta.json），供 C# 等运行时部署。
+# ⚠ 需 funasr + onnx + onnxruntime（见 requirements-train.txt）。
+# 用法：python -m kws_export export 小木小木
+[export]
+enabled = true
+opset = 17                 # torch.onnx.export 的 opset
+out_subdir = "onnx"        # 导出落 output/<词>/onnx/
+onnx_name = "kws_streaming.onnx"
+verify = true              # 导出后跑 onnxruntime vs torch 流式 parity 校验
+# work_subdir / num_avg 默认跟随 [train]；如需可在此覆盖：
+# work_subdir = "training"
+# num_avg = 10

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kws-train"
+version = "0.1.0"
+description = "中文唤醒词 KWS：评分（评估）→ finetune 训练 → 导出流式 ONNX"
+requires-python = ">=3.10"
+
+# 运行时依赖由 requirements.txt / requirements-train.txt 管理：
+#   pip install -r requirements.txt            # 评估侧
+#   pip install -r requirements-train.txt      # 训练 + 导出（另需按 CUDA 装 torch，见 README）
+# 再 `pip install -e .`（editable / src 布局）让 src/ 下各包可被 `python -m kws_xxx` 导入。
+
+[project.scripts]
+kws-score = "kws_score.cli:main"
+kws-train = "kws_train.cli:main"
+kws-export = "kws_export.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+kws_score = ["reference/*"]

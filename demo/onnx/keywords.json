@@ -1,0 +1,19 @@
+{
+    "word_list": [
+        {
+            "name": "小木小木",
+            "type": "wakeup",
+            "activation": true,
+            "is_main": true,
+            "lm_boost": 0.0,
+            "am_boost": 0.0,
+            "threshold1": 0.534,
+            "threshold2": -1.0,
+            "subseg_threshold": -0.6,
+            "high_threshold": 90.0,
+            "min_dur": 0.25,
+            "max_dur": 2.5,
+            "cc_name": "commoncc"
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+# 本地配置（含凭证，勿提交）
+config.toml
+
+# 训练产物与中间输出
+output/
+*.wav
+
+# 基线模型（从 ModelScope 下载，勿提交，见 README）
+speech_charctc_kws_phone/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# 编辑器
+.vscode/
+.idea/
+.vs/
