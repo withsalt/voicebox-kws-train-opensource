@@ -15,6 +15,10 @@
 
 ---
 
+## 预训练模型
+https://www.modelscope.cn/models/withsalt/voicebox_models/tree/master/v1/kws  
+（PS：“小云小云”由官方训练，然后导出而来，其他唤醒词模型由当前仓库训练而来）  
+
 ## 安装
 
 需要 Python ≥ 3.10。
