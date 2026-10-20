@@ -16,8 +16,13 @@
 ---
 
 ## 预训练模型
-https://www.modelscope.cn/models/withsalt/voicebox_models/tree/master/v1/kws  
-（PS：“小云小云”由官方训练，然后导出而来，其他唤醒词模型由当前仓库训练而来）  
+唤醒词模型下载：  
+[https://www.modelscope.cn/models/withsalt/voicebox_models/tree/master/v1/kws](https://www.modelscope.cn/models/withsalt/voicebox_models/tree/master/v1/kws)  
+
+在线体验：  
+[https://kws.pub.quarkbook.com/](https://kws.pub.quarkbook.com/)  
+
+（PS：“小云小云”由仓库官方训练，其他唤醒词模型由当前仓库训练而来）  
 
 ## 安装
 
