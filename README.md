@@ -1,7 +1,7 @@
 # kws-train · 中文唤醒词 KWS：评估 + 训练 + 导出
 
 一套精简、可独立运行的中文语音唤醒词（KWS, Keyword Spotting）工具，基于阿里
-[`speech_charctc_kws_phone`](https://modelscope.cn/models/iic/speech_charctc_kws_phone)
+[`speech_charctc_kws_phone`](https://modelscope.cn/models/iic/speech_charctc_kws_phone-xiaoyun)
 （4 层 cFSMN / char-CTC 近场模型）做 finetune，包含三个模块：
 
 | 模块 | 作用 | 命令 |
